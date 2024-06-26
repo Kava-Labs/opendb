@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const defaultDBName = "application"
+
 type mockAppOptions struct {
 	opts map[string]interface{}
 }
@@ -79,7 +81,7 @@ func TestOpenRocksdb(t *testing.T) {
 					require.NoError(t, err)
 				}()
 
-				db, err := openRocksdb(dir, tc.mockAppOptions)
+				db, err := openRocksdb(dir, defaultDBName, tc.mockAppOptions)
 				require.NoError(t, err)
 				require.NoError(t, db.Close())
 
@@ -104,7 +106,7 @@ func TestOpenRocksdb(t *testing.T) {
 		}()
 
 		mockAppOpts := newMockAppOptions(map[string]interface{}{})
-		db, err := openRocksdb(dir, mockAppOpts)
+		db, err := openRocksdb(dir, defaultDBName, mockAppOpts)
 		require.NoError(t, err)
 		require.NoError(t, db.Close())
 
