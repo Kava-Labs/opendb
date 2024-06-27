@@ -1,6 +1,6 @@
 module github.com/Kava-Labs/opendb
 
-go 1.22.3
+go 1.21
 
 require (
 	github.com/cometbft/cometbft-db v0.9.1
@@ -113,7 +113,7 @@ require (
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
-	go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 // indirect
+	go.etcd.io/bbolt v1.3.8 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb // indirect
 	golang.org/x/net v0.24.0 // indirect
