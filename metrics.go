@@ -4,13 +4,14 @@
 package opendb
 
 import (
+	"fmt"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 // rocksdbMetrics will be initialized in registerMetrics() if enableRocksdbMetrics flag set to true
-var rocksdbMetrics *Metrics
+var rocksdbMetrics = make(map[string]*Metrics)
 
 // Metrics contains all rocksdb metrics which will be reported to prometheus
 type Metrics struct {
@@ -89,35 +90,40 @@ type Metrics struct {
 }
 
 // registerMetrics registers metrics in prometheus and initializes rocksdbMetrics variable
-func registerMetrics() {
-	if rocksdbMetrics != nil {
+func registerMetrics(dbName string) {
+	if rocksdbMetrics[dbName] != nil {
 		// metrics already registered
 		return
 	}
 
+	namespace := "rocksdb"
+	if dbName != "application" {
+		namespace = fmt.Sprintf("rocksdb_%v", dbName)
+	}
+
 	labels := make([]string, 0)
-	rocksdbMetrics = &Metrics{
+	rocksdbMetrics[dbName] = &Metrics{
 		// Keys
 		NumberKeysWritten: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "key",
 			Name:      "number_keys_written",
 			Help:      "",
 		}, labels),
 		NumberKeysRead: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "key",
 			Name:      "number_keys_read",
 			Help:      "",
 		}, labels),
 		NumberKeysUpdated: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "key",
 			Name:      "number_keys_updated",
 			Help:      "",
 		}, labels),
 		EstimateNumKeys: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "key",
 			Name:      "estimate_num_keys",
 			Help:      "estimated number of total keys in the active and unflushed immutable memtables and storage",
@@ -125,13 +131,13 @@ func registerMetrics() {
 
 		// Files
 		NumberFileOpens: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "file",
 			Name:      "number_file_opens",
 			Help:      "",
 		}, labels),
 		NumberFileErrors: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "file",
 			Name:      "number_file_errors",
 			Help:      "",
@@ -139,25 +145,25 @@ func registerMetrics() {
 
 		// Memory
 		BlockCacheUsage: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "memory",
 			Name:      "block_cache_usage",
 			Help:      "memory size for the entries residing in block cache",
 		}, labels),
 		EstimateTableReadersMem: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "memory",
 			Name:      "estimate_table_readers_mem",
 			Help:      "estimated memory used for reading SST tables, excluding memory used in block cache (e.g., filter and index blocks)",
 		}, labels),
 		CurSizeAllMemTables: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "memory",
 			Name:      "cur_size_all_mem_tables",
 			Help:      "approximate size of active and unflushed immutable memtables (bytes)",
 		}, labels),
 		BlockCachePinnedUsage: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "memory",
 			Name:      "block_cache_pinned_usage",
 			Help:      "returns the memory size for the entries being pinned",
@@ -165,25 +171,25 @@ func registerMetrics() {
 
 		// Cache
 		BlockCacheMiss: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "cache",
 			Name:      "block_cache_miss",
 			Help:      "block_cache_miss == block_cache_index_miss + block_cache_filter_miss + block_cache_data_miss",
 		}, labels),
 		BlockCacheHit: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "cache",
 			Name:      "block_cache_hit",
 			Help:      "block_cache_hit == block_cache_index_hit + block_cache_filter_hit + block_cache_data_hit",
 		}, labels),
 		BlockCacheAdd: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "cache",
 			Name:      "block_cache_add",
 			Help:      "number of blocks added to block cache",
 		}, labels),
 		BlockCacheAddFailures: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "cache",
 			Name:      "block_cache_add_failures",
 			Help:      "number of failures when adding blocks to block cache",
@@ -191,57 +197,57 @@ func registerMetrics() {
 
 		// Detailed Cache
 		BlockCacheIndexMiss: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_index_miss",
 			Help:      "",
 		}, labels),
 		BlockCacheIndexHit: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_index_hit",
 			Help:      "",
 		}, labels),
 		BlockCacheIndexBytesInsert: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_index_bytes_insert",
 			Help:      "",
 		}, labels),
 
 		BlockCacheFilterMiss: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_filter_miss",
 			Help:      "",
 		}, labels),
 		BlockCacheFilterHit: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_filter_hit",
 			Help:      "",
 		}, labels),
 		BlockCacheFilterBytesInsert: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_filter_bytes_insert",
 			Help:      "",
 		}, labels),
 
 		BlockCacheDataMiss: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_data_miss",
 			Help:      "",
 		}, labels),
 		BlockCacheDataHit: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_data_hit",
 			Help:      "",
 		}, labels),
 		BlockCacheDataBytesInsert: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "detailed_cache",
 			Name:      "block_cache_data_bytes_insert",
 			Help:      "",
@@ -249,62 +255,62 @@ func registerMetrics() {
 
 		// Latency
 		DBGetMicrosP50: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_get_micros_p50",
 			Help:      "",
 		}, labels),
 		DBGetMicrosP95: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_get_micros_p95",
 			Help:      "",
 		}, labels),
 		DBGetMicrosP99: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_get_micros_p99",
 			Help:      "",
 		}, labels),
 		DBGetMicrosP100: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_get_micros_p100",
 			Help:      "",
 		}, labels),
 		DBGetMicrosCount: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_get_micros_count",
 			Help:      "",
 		}, labels),
 
 		DBWriteMicrosP50: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_write_micros_p50",
 			Help:      "",
 		}, labels),
 		DBWriteMicrosP95: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_write_micros_p95",
 			Help:      "",
 		}, labels),
 		DBWriteMicrosP99: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_write_micros_p99",
 			Help:      "",
 		}, labels),
 		DBWriteMicrosP100: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_write_micros_p100",
 			Help:      "",
 		}, labels),
 		DBWriteMicrosCount: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "latency",
 			Name:      "db_write_micros_count",
 			Help:      "",
@@ -312,44 +318,44 @@ func registerMetrics() {
 
 		// Write Stall
 		StallMicros: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "stall_micros",
 			Help:      "Writer has to wait for compaction or flush to finish.",
 		}, labels),
 
 		DBWriteStallP50: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_p50",
 			Help:      "",
 		}, labels),
 		DBWriteStallP95: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_p95",
 			Help:      "",
 		}, labels),
 		DBWriteStallP99: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_p99",
 			Help:      "",
 		}, labels),
 		DBWriteStallP100: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_p100",
 			Help:      "",
 		}, labels),
 		DBWriteStallCount: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_count",
 			Help:      "",
 		}, labels),
 		DBWriteStallSum: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "stall",
 			Name:      "db_write_stall_sum",
 			Help:      "",
@@ -357,19 +363,19 @@ func registerMetrics() {
 
 		// Bloom Filter
 		BloomFilterUseful: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "filter",
 			Name:      "bloom_filter_useful",
 			Help:      "number of times bloom filter has avoided file reads, i.e., negatives.",
 		}, labels),
 		BloomFilterFullPositive: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "filter",
 			Name:      "bloom_filter_full_positive",
 			Help:      "number of times bloom FullFilter has not avoided the reads.",
 		}, labels),
 		BloomFilterFullTruePositive: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "filter",
 			Name:      "bloom_filter_full_true_positive",
 			Help:      "number of times bloom FullFilter has not avoided the reads and data actually exist.",
@@ -377,44 +383,44 @@ func registerMetrics() {
 
 		// LSM Tree Stats
 		LastLevelReadBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "last_level_read_bytes",
 			Help:      "",
 		}, labels),
 		LastLevelReadCount: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "last_level_read_count",
 			Help:      "",
 		}, labels),
 		NonLastLevelReadBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "non_last_level_read_bytes",
 			Help:      "",
 		}, labels),
 		NonLastLevelReadCount: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "non_last_level_read_count",
 			Help:      "",
 		}, labels),
 
 		GetHitL0: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "get_hit_l0",
 			Help:      "number of Get() queries served by L0",
 		}, labels),
 		GetHitL1: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "get_hit_l1",
 			Help:      "number of Get() queries served by L1",
 		}, labels),
 		GetHitL2AndUp: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
-			Namespace: "rocksdb",
+			Namespace: namespace,
 			Subsystem: "lsm",
 			Name:      "get_hit_l2_and_up",
 			Help:      "number of Get() queries served by L2 and up",

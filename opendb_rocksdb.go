@@ -291,7 +291,7 @@ func bbtoFromAppOpts(appOpts types.AppOptions) *grocksdb.BlockBasedTableOptions 
 // newRocksDBWithOptions opens rocksdb with provided database and column family options
 // newRocksDBWithOptions expects that db has only one column family named default
 func newRocksDBWithOptions(
-	name string,
+	dbName string,
 	dir string,
 	dbOpts *grocksdb.Options,
 	cfOpts *grocksdb.Options,
@@ -299,7 +299,7 @@ func newRocksDBWithOptions(
 	enableMetrics bool,
 	reportMetricsIntervalSecs int64,
 ) (*dbm.RocksDB, error) {
-	dbPath := filepath.Join(dir, name+".db")
+	dbPath := filepath.Join(dir, dbName+".db")
 
 	// Ensure path exists
 	if err := os.MkdirAll(dbPath, 0755); err != nil {
@@ -317,8 +317,8 @@ func newRocksDBWithOptions(
 	}
 
 	if enableMetrics {
-		registerMetrics()
-		go reportMetrics(db, time.Second*time.Duration(reportMetricsIntervalSecs))
+		registerMetrics(dbName)
+		go reportMetrics(dbName, db, time.Second*time.Duration(reportMetricsIntervalSecs))
 	}
 
 	wo := grocksdb.NewDefaultWriteOptions()
@@ -359,7 +359,7 @@ func defaultBBTO() *grocksdb.BlockBasedTableOptions {
 
 // reportMetrics periodically requests stats from rocksdb and reports to prometheus
 // NOTE: should be launched as a goroutine
-func reportMetrics(db *grocksdb.DB, interval time.Duration) {
+func reportMetrics(dbName string, db *grocksdb.DB, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	for {
 		select {
@@ -369,7 +369,16 @@ func reportMetrics(db *grocksdb.DB, interval time.Duration) {
 				continue
 			}
 
-			rocksdbMetrics.report(props, stats)
+			// TODO(yevhenii): check if not nil
+			fmt.Printf("dbName: %v\n", dbName)
+			fmt.Printf("================ rocksdbMetrics map ================\n")
+			fmt.Printf("num of items: %v\n", len(rocksdbMetrics))
+			for dbName := range rocksdbMetrics {
+				fmt.Printf("%v\n", dbName)
+			}
+			fmt.Printf("================ rocksdbMetrics map ================\n")
+
+			rocksdbMetrics[dbName].report(props, stats)
 		}
 	}
 }
