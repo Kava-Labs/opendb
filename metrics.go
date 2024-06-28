@@ -106,7 +106,7 @@ func registerMetrics(dbName string) {
 	//	namespace = "rocksdb"
 	//}
 
-	namespace := "rocksdb"
+	namespace := "rocksdb_v2"
 	labels := []string{dbNameMetricLabelName}
 	dbNameToMetrics = &Metrics{
 		// Keys
