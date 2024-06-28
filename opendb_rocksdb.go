@@ -369,16 +369,20 @@ func reportMetrics(dbName string, db *grocksdb.DB, interval time.Duration) {
 				continue
 			}
 
-			// TODO(yevhenii): check if not nil
 			fmt.Printf("dbName: %v\n", dbName)
 			fmt.Printf("================ rocksdbMetrics map ================\n")
-			fmt.Printf("num of items: %v\n", len(rocksdbMetrics))
-			for dbName := range rocksdbMetrics {
+			fmt.Printf("num of items: %v\n", len(dbNameToMetrics))
+			for dbName := range dbNameToMetrics {
 				fmt.Printf("%v\n", dbName)
 			}
 			fmt.Printf("================ rocksdbMetrics map ================\n")
 
-			rocksdbMetrics[dbName].report(props, stats)
+			metrics := dbNameToMetrics[dbName]
+			if metrics == nil {
+				// TODO(yevhenii): is it safe to panic here?
+				panic(fmt.Sprintf("trying to report metrics for unregistered database: %v", dbName))
+			}
+			metrics.report(props, stats)
 		}
 	}
 }

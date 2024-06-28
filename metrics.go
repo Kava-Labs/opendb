@@ -10,10 +10,11 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-// rocksdbMetrics will be initialized in registerMetrics() if enableRocksdbMetrics flag set to true
-var rocksdbMetrics = make(map[string]*Metrics)
+// dbNameToMetrics contains mapping between dbName and corresponding metrics
+// new DBs will be added in registerMetrics(dbName) if corresponding enableRocksdbMetrics flag set to true
+var dbNameToMetrics = make(map[string]*Metrics)
 
-// Metrics contains all rocksdb metrics which will be reported to prometheus
+// Metrics contains rocksdb metrics for specific database which will be reported to prometheus
 type Metrics struct {
 	// Keys
 	NumberKeysWritten metrics.Gauge
@@ -89,20 +90,21 @@ type Metrics struct {
 	GetHitL2AndUp metrics.Gauge
 }
 
-// registerMetrics registers metrics in prometheus and initializes rocksdbMetrics variable
+// registerMetrics registers metrics in prometheus and adds db to dbNameToMetrics map
 func registerMetrics(dbName string) {
-	if rocksdbMetrics[dbName] != nil {
-		// metrics already registered
+	if dbNameToMetrics[dbName] != nil {
+		// metrics for this database already registered
 		return
 	}
 
-	namespace := "rocksdb"
-	if dbName != "application" {
-		namespace = fmt.Sprintf("rocksdb_%v", dbName)
+	namespace := fmt.Sprintf("rocksdb_%v", dbName)
+	// exception needed for backward-compatibility
+	if dbName == "application" {
+		namespace = "rocksdb"
 	}
 
 	labels := make([]string, 0)
-	rocksdbMetrics[dbName] = &Metrics{
+	dbNameToMetrics[dbName] = &Metrics{
 		// Keys
 		NumberKeysWritten: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
