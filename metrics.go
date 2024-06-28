@@ -15,7 +15,7 @@ const (
 
 // dbNameToMetrics contains mapping between dbName and corresponding metrics
 // new DBs will be added in registerMetrics(dbName) if corresponding enableRocksdbMetrics flag set to true
-var dbNameToMetrics = make(map[string]*Metrics)
+var dbNameToMetrics *Metrics
 
 // Metrics contains rocksdb metrics for specific database which will be reported to prometheus
 type Metrics struct {
@@ -95,7 +95,7 @@ type Metrics struct {
 
 // registerMetrics registers metrics in prometheus and adds db to dbNameToMetrics map
 func registerMetrics(dbName string) {
-	if dbNameToMetrics[dbName] != nil {
+	if dbNameToMetrics != nil {
 		// metrics for this database already registered
 		return
 	}
@@ -108,7 +108,7 @@ func registerMetrics(dbName string) {
 
 	namespace := "rocksdb"
 	labels := []string{dbNameMetricLabelName}
-	dbNameToMetrics[dbName] = &Metrics{
+	dbNameToMetrics = &Metrics{
 		// Keys
 		NumberKeysWritten: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
