@@ -4,10 +4,13 @@
 package opendb
 
 import (
-	"fmt"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
+)
+
+const (
+	dbNameMetricLabelName = "db_name"
 )
 
 // dbNameToMetrics contains mapping between dbName and corresponding metrics
@@ -97,13 +100,14 @@ func registerMetrics(dbName string) {
 		return
 	}
 
-	namespace := fmt.Sprintf("rocksdb_%v", dbName)
-	// exception needed for backward-compatibility
-	if dbName == "application" {
-		namespace = "rocksdb"
-	}
+	//namespace := fmt.Sprintf("rocksdb_%v", dbName)
+	//// exception needed for backward-compatibility
+	//if dbName == "application" {
+	//	namespace = "rocksdb"
+	//}
 
-	labels := make([]string, 0)
+	namespace := "rocksdb"
+	labels := []string{dbNameMetricLabelName}
 	dbNameToMetrics[dbName] = &Metrics{
 		// Keys
 		NumberKeysWritten: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
@@ -431,77 +435,77 @@ func registerMetrics(dbName string) {
 }
 
 // report reports metrics to prometheus based on rocksdb props and stats
-func (m *Metrics) report(props *properties, stats *stats) {
+func (m *Metrics) report(dbName string, props *properties, stats *stats) {
 	// Keys
-	m.NumberKeysWritten.Set(float64(stats.NumberKeysWritten))
-	m.NumberKeysRead.Set(float64(stats.NumberKeysRead))
-	m.NumberKeysUpdated.Set(float64(stats.NumberKeysUpdated))
-	m.EstimateNumKeys.Set(float64(props.EstimateNumKeys))
+	m.NumberKeysWritten.With(dbNameMetricLabelName, dbName).Set(float64(stats.NumberKeysWritten))
+	m.NumberKeysRead.With(dbNameMetricLabelName, dbName).Set(float64(stats.NumberKeysRead))
+	m.NumberKeysUpdated.With(dbNameMetricLabelName, dbName).Set(float64(stats.NumberKeysUpdated))
+	m.EstimateNumKeys.With(dbNameMetricLabelName, dbName).Set(float64(props.EstimateNumKeys))
 
 	// Files
-	m.NumberFileOpens.Set(float64(stats.NumberFileOpens))
-	m.NumberFileErrors.Set(float64(stats.NumberFileErrors))
+	m.NumberFileOpens.With(dbNameMetricLabelName, dbName).Set(float64(stats.NumberFileOpens))
+	m.NumberFileErrors.With(dbNameMetricLabelName, dbName).Set(float64(stats.NumberFileErrors))
 
 	// Memory
-	m.BlockCacheUsage.Set(float64(props.BlockCacheUsage))
-	m.EstimateTableReadersMem.Set(float64(props.EstimateTableReadersMem))
-	m.CurSizeAllMemTables.Set(float64(props.CurSizeAllMemTables))
-	m.BlockCachePinnedUsage.Set(float64(props.BlockCachePinnedUsage))
+	m.BlockCacheUsage.With(dbNameMetricLabelName, dbName).Set(float64(props.BlockCacheUsage))
+	m.EstimateTableReadersMem.With(dbNameMetricLabelName, dbName).Set(float64(props.EstimateTableReadersMem))
+	m.CurSizeAllMemTables.With(dbNameMetricLabelName, dbName).Set(float64(props.CurSizeAllMemTables))
+	m.BlockCachePinnedUsage.With(dbNameMetricLabelName, dbName).Set(float64(props.BlockCachePinnedUsage))
 
 	// Cache
-	m.BlockCacheMiss.Set(float64(stats.BlockCacheMiss))
-	m.BlockCacheHit.Set(float64(stats.BlockCacheHit))
-	m.BlockCacheAdd.Set(float64(stats.BlockCacheAdd))
-	m.BlockCacheAddFailures.Set(float64(stats.BlockCacheAddFailures))
+	m.BlockCacheMiss.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheMiss))
+	m.BlockCacheHit.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheHit))
+	m.BlockCacheAdd.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheAdd))
+	m.BlockCacheAddFailures.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheAddFailures))
 
 	// Detailed Cache
-	m.BlockCacheIndexMiss.Set(float64(stats.BlockCacheIndexMiss))
-	m.BlockCacheIndexHit.Set(float64(stats.BlockCacheIndexHit))
-	m.BlockCacheIndexBytesInsert.Set(float64(stats.BlockCacheIndexBytesInsert))
+	m.BlockCacheIndexMiss.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheIndexMiss))
+	m.BlockCacheIndexHit.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheIndexHit))
+	m.BlockCacheIndexBytesInsert.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheIndexBytesInsert))
 
-	m.BlockCacheFilterMiss.Set(float64(stats.BlockCacheFilterMiss))
-	m.BlockCacheFilterHit.Set(float64(stats.BlockCacheFilterHit))
-	m.BlockCacheFilterBytesInsert.Set(float64(stats.BlockCacheFilterBytesInsert))
+	m.BlockCacheFilterMiss.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheFilterMiss))
+	m.BlockCacheFilterHit.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheFilterHit))
+	m.BlockCacheFilterBytesInsert.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheFilterBytesInsert))
 
-	m.BlockCacheDataMiss.Set(float64(stats.BlockCacheDataMiss))
-	m.BlockCacheDataHit.Set(float64(stats.BlockCacheDataHit))
-	m.BlockCacheDataBytesInsert.Set(float64(stats.BlockCacheDataBytesInsert))
+	m.BlockCacheDataMiss.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheDataMiss))
+	m.BlockCacheDataHit.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheDataHit))
+	m.BlockCacheDataBytesInsert.With(dbNameMetricLabelName, dbName).Set(float64(stats.BlockCacheDataBytesInsert))
 
 	// Latency
-	m.DBGetMicrosP50.Set(stats.DBGetMicros.P50)
-	m.DBGetMicrosP95.Set(stats.DBGetMicros.P95)
-	m.DBGetMicrosP99.Set(stats.DBGetMicros.P99)
-	m.DBGetMicrosP100.Set(stats.DBGetMicros.P100)
-	m.DBGetMicrosCount.Set(stats.DBGetMicros.Count)
+	m.DBGetMicrosP50.With(dbNameMetricLabelName, dbName).Set(stats.DBGetMicros.P50)
+	m.DBGetMicrosP95.With(dbNameMetricLabelName, dbName).Set(stats.DBGetMicros.P95)
+	m.DBGetMicrosP99.With(dbNameMetricLabelName, dbName).Set(stats.DBGetMicros.P99)
+	m.DBGetMicrosP100.With(dbNameMetricLabelName, dbName).Set(stats.DBGetMicros.P100)
+	m.DBGetMicrosCount.With(dbNameMetricLabelName, dbName).Set(stats.DBGetMicros.Count)
 
-	m.DBWriteMicrosP50.Set(stats.DBWriteMicros.P50)
-	m.DBWriteMicrosP95.Set(stats.DBWriteMicros.P95)
-	m.DBWriteMicrosP99.Set(stats.DBWriteMicros.P99)
-	m.DBWriteMicrosP100.Set(stats.DBWriteMicros.P100)
-	m.DBWriteMicrosCount.Set(stats.DBWriteMicros.Count)
+	m.DBWriteMicrosP50.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteMicros.P50)
+	m.DBWriteMicrosP95.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteMicros.P95)
+	m.DBWriteMicrosP99.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteMicros.P99)
+	m.DBWriteMicrosP100.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteMicros.P100)
+	m.DBWriteMicrosCount.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteMicros.Count)
 
 	// Write Stall
-	m.StallMicros.Set(float64(stats.StallMicros))
+	m.StallMicros.With(dbNameMetricLabelName, dbName).Set(float64(stats.StallMicros))
 
-	m.DBWriteStallP50.Set(stats.DBWriteStallHistogram.P50)
-	m.DBWriteStallP95.Set(stats.DBWriteStallHistogram.P95)
-	m.DBWriteStallP99.Set(stats.DBWriteStallHistogram.P99)
-	m.DBWriteStallP100.Set(stats.DBWriteStallHistogram.P100)
-	m.DBWriteStallCount.Set(stats.DBWriteStallHistogram.Count)
-	m.DBWriteStallSum.Set(stats.DBWriteStallHistogram.Sum)
+	m.DBWriteStallP50.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.P50)
+	m.DBWriteStallP95.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.P95)
+	m.DBWriteStallP99.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.P99)
+	m.DBWriteStallP100.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.P100)
+	m.DBWriteStallCount.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.Count)
+	m.DBWriteStallSum.With(dbNameMetricLabelName, dbName).Set(stats.DBWriteStallHistogram.Sum)
 
 	// Bloom Filter
-	m.BloomFilterUseful.Set(float64(stats.BloomFilterUseful))
-	m.BloomFilterFullPositive.Set(float64(stats.BloomFilterFullPositive))
-	m.BloomFilterFullTruePositive.Set(float64(stats.BloomFilterFullTruePositive))
+	m.BloomFilterUseful.With(dbNameMetricLabelName, dbName).Set(float64(stats.BloomFilterUseful))
+	m.BloomFilterFullPositive.With(dbNameMetricLabelName, dbName).Set(float64(stats.BloomFilterFullPositive))
+	m.BloomFilterFullTruePositive.With(dbNameMetricLabelName, dbName).Set(float64(stats.BloomFilterFullTruePositive))
 
 	// LSM Tree Stats
-	m.LastLevelReadBytes.Set(float64(stats.LastLevelReadBytes))
-	m.LastLevelReadCount.Set(float64(stats.LastLevelReadCount))
-	m.NonLastLevelReadBytes.Set(float64(stats.NonLastLevelReadBytes))
-	m.NonLastLevelReadCount.Set(float64(stats.NonLastLevelReadCount))
+	m.LastLevelReadBytes.With(dbNameMetricLabelName, dbName).Set(float64(stats.LastLevelReadBytes))
+	m.LastLevelReadCount.With(dbNameMetricLabelName, dbName).Set(float64(stats.LastLevelReadCount))
+	m.NonLastLevelReadBytes.With(dbNameMetricLabelName, dbName).Set(float64(stats.NonLastLevelReadBytes))
+	m.NonLastLevelReadCount.With(dbNameMetricLabelName, dbName).Set(float64(stats.NonLastLevelReadCount))
 
-	m.GetHitL0.Set(float64(stats.GetHitL0))
-	m.GetHitL1.Set(float64(stats.GetHitL1))
-	m.GetHitL2AndUp.Set(float64(stats.GetHitL2AndUp))
+	m.GetHitL0.With(dbNameMetricLabelName, dbName).Set(float64(stats.GetHitL0))
+	m.GetHitL1.With(dbNameMetricLabelName, dbName).Set(float64(stats.GetHitL1))
+	m.GetHitL2AndUp.With(dbNameMetricLabelName, dbName).Set(float64(stats.GetHitL2AndUp))
 }

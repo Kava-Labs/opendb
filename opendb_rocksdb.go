@@ -382,7 +382,7 @@ func reportMetrics(dbName string, db *grocksdb.DB, interval time.Duration) {
 				// TODO(yevhenii): is it safe to panic here?
 				panic(fmt.Sprintf("trying to report metrics for unregistered database: %v", dbName))
 			}
-			metrics.report(props, stats)
+			metrics.report(dbName, props, stats)
 		}
 	}
 }
