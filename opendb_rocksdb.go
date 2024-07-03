@@ -369,6 +369,9 @@ func reportMetrics(dbName string, db *grocksdb.DB, interval time.Duration) {
 				continue
 			}
 
+			if rocksdbMetrics == nil {
+				continue
+			}
 			rocksdbMetrics.report(dbName, props, stats)
 		}
 	}
