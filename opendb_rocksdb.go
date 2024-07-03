@@ -78,19 +78,18 @@ const (
 	asyncIOReadOptName = "rocksdb.read-async-io"
 )
 
-func OpenDB(appOpts types.AppOptions, home string, backendType dbm.BackendType) (dbm.DB, error) {
-	dataDir := filepath.Join(home, "data")
+func OpenDB(appOpts types.AppOptions, dataDir string, dbName string, backendType dbm.BackendType) (dbm.DB, error) {
 	if backendType == dbm.RocksDBBackend {
-		return openRocksdb(dataDir, appOpts)
+		return openRocksdb(dataDir, dbName, appOpts)
 	}
 
-	return dbm.NewDB("application", backendType, dataDir)
+	return dbm.NewDB(dbName, backendType, dataDir)
 }
 
 // openRocksdb loads existing options, overrides some of them with appOpts and opens database
 // option will be overridden only in case if it explicitly specified in appOpts
-func openRocksdb(dir string, appOpts types.AppOptions) (dbm.DB, error) {
-	optionsPath := filepath.Join(dir, "application.db")
+func openRocksdb(dir string, dbName string, appOpts types.AppOptions) (dbm.DB, error) {
+	optionsPath := filepath.Join(dir, dbName+".db")
 	dbOpts, cfOpts, err := LoadLatestOptions(optionsPath)
 	if err != nil {
 		return nil, err
@@ -109,7 +108,7 @@ func openRocksdb(dir string, appOpts types.AppOptions) (dbm.DB, error) {
 		reportMetricsIntervalSecs = defaultReportMetricsIntervalSecs
 	}
 
-	return newRocksDBWithOptions("application", dir, dbOpts, cfOpts, readOpts, enableMetrics, reportMetricsIntervalSecs)
+	return newRocksDBWithOptions(dbName, dir, dbOpts, cfOpts, readOpts, enableMetrics, reportMetricsIntervalSecs)
 }
 
 // LoadLatestOptions loads and returns database and column family options
@@ -292,7 +291,7 @@ func bbtoFromAppOpts(appOpts types.AppOptions) *grocksdb.BlockBasedTableOptions 
 // newRocksDBWithOptions opens rocksdb with provided database and column family options
 // newRocksDBWithOptions expects that db has only one column family named default
 func newRocksDBWithOptions(
-	name string,
+	dbName string,
 	dir string,
 	dbOpts *grocksdb.Options,
 	cfOpts *grocksdb.Options,
@@ -300,7 +299,7 @@ func newRocksDBWithOptions(
 	enableMetrics bool,
 	reportMetricsIntervalSecs int64,
 ) (*dbm.RocksDB, error) {
-	dbPath := filepath.Join(dir, name+".db")
+	dbPath := filepath.Join(dir, dbName+".db")
 
 	// Ensure path exists
 	if err := os.MkdirAll(dbPath, 0755); err != nil {
@@ -319,7 +318,7 @@ func newRocksDBWithOptions(
 
 	if enableMetrics {
 		registerMetrics()
-		go reportMetrics(db, time.Second*time.Duration(reportMetricsIntervalSecs))
+		go reportMetrics(dbName, db, time.Second*time.Duration(reportMetricsIntervalSecs))
 	}
 
 	wo := grocksdb.NewDefaultWriteOptions()
@@ -360,7 +359,7 @@ func defaultBBTO() *grocksdb.BlockBasedTableOptions {
 
 // reportMetrics periodically requests stats from rocksdb and reports to prometheus
 // NOTE: should be launched as a goroutine
-func reportMetrics(db *grocksdb.DB, interval time.Duration) {
+func reportMetrics(dbName string, db *grocksdb.DB, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	for {
 		select {
@@ -370,7 +369,10 @@ func reportMetrics(db *grocksdb.DB, interval time.Duration) {
 				continue
 			}
 
-			rocksdbMetrics.report(props, stats)
+			if rocksdbMetrics == nil {
+				continue
+			}
+			rocksdbMetrics.report(dbName, props, stats)
 		}
 	}
 }
