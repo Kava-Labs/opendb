@@ -101,3 +101,44 @@ There are 2 main scenarios:
 | get_hit_l0                      | LSM                | number of Get() queries served by L0 |
 | get_hit_l1                      | LSM                | number of Get() queries served by L1 |
 | get_hit_l2_and_up               | LSM                | number of Get() queries served by L2 and up |
+
+### Example of RocksDB configuration
+
+```yml
+#####################
+# RocksDB Tuning
+#####################
+rocksdb_enable_metrics: true
+rocksdb_report_metrics_interval_secs: 15
+
+rocksdb_max_open_files: 16384 # increase default max # of open files from 4096
+rocksdb_max_file_opening_threads: 16
+rocksdb_table_cache_numshardbits: 6
+rocksdb_allow_mmap_writes: false
+rocksdb_allow_mmap_reads: false
+rocksdb_use_fsync: false
+rocksdb_use_adaptive_mutex: false
+rocksdb_bytes_per_sync: 0
+rocksdb_max_background_jobs: 16
+
+rocksdb_write_buffer_size: 134217728
+rocksdb_num_levels: 7
+rocksdb_max_write_buffer_number: 6
+rocksdb_min_write_buffer_number_to_merge: 2
+rocksdb_max_bytes_for_level_base: 536870912
+rocksdb_max_bytes_for_level_multiplier: 10.000000
+rocksdb_target_file_size_base: 67108864
+rocksdb_target_file_size_multiplier: 1
+rocksdb_level0_file_num_compaction_trigger: 2
+rocksdb_level0_slowdown_writes_trigger: 20
+
+rocksdb_block_cache_size: 1073741824
+rocksdb_bits_per_key: 10
+rocksdb_block_size: 16384 # 16K to match default zfs. Decreases block index memory usage by 4x from the default 4K
+rocksdb_cache_index_and_filter_blocks: false
+rocksdb_pin_l0_filter_and_index_blocks_in_cache: false
+rocksdb_format_version: 5
+
+# https://rocksdb.org/blog/2022/10/07/asynchronous-io-in-rocksdb.html
+rocksdb_read_async_io: true # help speed up iterations
+```
