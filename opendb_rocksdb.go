@@ -30,7 +30,6 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/linxGnu/grocksdb"
 	"github.com/spf13/cast"
 )
@@ -78,7 +77,14 @@ const (
 	asyncIOReadOptName = "rocksdb.read-async-io"
 )
 
-func OpenDB(appOpts types.AppOptions, dataDir string, dbName string, backendType dbm.BackendType) (dbm.DB, error) {
+// AppOptions is the same interface as provided by cosmos-sdk, see for details:
+// https://github.com/cosmos/cosmos-sdk/blob/10465a6aabdfc9119ff187ac3ef229f33c06ab45/server/types/app.go#L29-L31
+// We added it here to avoid cosmos-sdk dependency.
+type AppOptions interface {
+	Get(string) interface{}
+}
+
+func OpenDB(appOpts AppOptions, dataDir string, dbName string, backendType dbm.BackendType) (dbm.DB, error) {
 	if backendType == dbm.RocksDBBackend {
 		return openRocksdb(dataDir, dbName, appOpts)
 	}
@@ -88,7 +94,7 @@ func OpenDB(appOpts types.AppOptions, dataDir string, dbName string, backendType
 
 // openRocksdb loads existing options, overrides some of them with appOpts and opens database
 // option will be overridden only in case if it explicitly specified in appOpts
-func openRocksdb(dir string, dbName string, appOpts types.AppOptions) (dbm.DB, error) {
+func openRocksdb(dir string, dbName string, appOpts AppOptions) (dbm.DB, error) {
 	optionsPath := filepath.Join(dir, dbName+".db")
 	dbOpts, cfOpts, err := LoadLatestOptions(optionsPath)
 	if err != nil {
@@ -136,7 +142,7 @@ func LoadLatestOptions(dir string) (*grocksdb.Options, *grocksdb.Options, error)
 }
 
 // overrideDBOpts merges dbOpts and appOpts, appOpts takes precedence
-func overrideDBOpts(dbOpts *grocksdb.Options, appOpts types.AppOptions) *grocksdb.Options {
+func overrideDBOpts(dbOpts *grocksdb.Options, appOpts AppOptions) *grocksdb.Options {
 	maxOpenFiles := appOpts.Get(maxOpenFilesDBOptName)
 	if maxOpenFiles != nil {
 		dbOpts.SetMaxOpenFiles(cast.ToInt(maxOpenFiles))
@@ -186,7 +192,7 @@ func overrideDBOpts(dbOpts *grocksdb.Options, appOpts types.AppOptions) *grocksd
 }
 
 // overrideCFOpts merges cfOpts and appOpts, appOpts takes precedence
-func overrideCFOpts(cfOpts *grocksdb.Options, appOpts types.AppOptions) *grocksdb.Options {
+func overrideCFOpts(cfOpts *grocksdb.Options, appOpts AppOptions) *grocksdb.Options {
 	writeBufferSize := appOpts.Get(writeBufferSizeCFOptName)
 	if writeBufferSize != nil {
 		cfOpts.SetWriteBufferSize(cast.ToUint64(writeBufferSize))
@@ -240,7 +246,7 @@ func overrideCFOpts(cfOpts *grocksdb.Options, appOpts types.AppOptions) *grocksd
 	return cfOpts
 }
 
-func readOptsFromAppOpts(appOpts types.AppOptions) *grocksdb.ReadOptions {
+func readOptsFromAppOpts(appOpts AppOptions) *grocksdb.ReadOptions {
 	ro := grocksdb.NewDefaultReadOptions()
 	asyncIO := appOpts.Get(asyncIOReadOptName)
 	if asyncIO != nil {
@@ -250,7 +256,7 @@ func readOptsFromAppOpts(appOpts types.AppOptions) *grocksdb.ReadOptions {
 	return ro
 }
 
-func bbtoFromAppOpts(appOpts types.AppOptions) *grocksdb.BlockBasedTableOptions {
+func bbtoFromAppOpts(appOpts AppOptions) *grocksdb.BlockBasedTableOptions {
 	bbto := defaultBBTO()
 
 	blockCacheSize := appOpts.Get(blockCacheSizeBBTOOptName)
