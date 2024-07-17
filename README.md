@@ -37,15 +37,15 @@ There are 2 main scenarios:
 
 ### List of databases:
 
-| Name                            | Subsystem          | IAVL V1 size as of 10.5 millions blocks |
-| ------------------------------- | ------------------ | --------------------------------------- |
-| application.db                  | Kava               | 4.5 TB |
-| metadata.db (snapshots)         | Kava               | 21 MB  |
-| blockstore.db                   | Ethermint          | 337 GB |
-| state.db                        | Ethermint          | 282 GB |
-| tx_index.db                     | Ethermint          | 504 GB |
-| evidence.db                     | Ethermint          | 28 MB  |
-| evm_indexer.db                  | Ethermint          | 2.2 GB |
+| Name                            | Subsystem          | IAVL V1 size as of 10.5 millions blocks | IAVL V1 number of SST files as of 10.5 millions blocks |
+| ------------------------------- | ------------------ | --------------------------------------- | ------------------------------------------------------ |
+| application.db                  | Kava               | 4.5 TB                                  | 76k   |
+| metadata.db (snapshots)         | Kava               | 21 MB                                   | 300   |
+| blockstore.db                   | Ethermint          | 337 GB                                  | 6k    |
+| state.db                        | Ethermint          | 282 GB                                  | 5.5k  |
+| tx_index.db                     | Ethermint          | 504 GB                                  | 11.6k |
+| evidence.db                     | Ethermint          | 28 MB                                   | 270   |
+| evm_indexer.db                  | Ethermint          | 2.2 GB                                  | 230   |
 
 ### List of reported rocksdb metrics:
 
