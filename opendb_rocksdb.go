@@ -42,39 +42,39 @@ const (
 
 	DefaultColumnFamilyName = "default"
 
-	enableMetricsOptName             = "rocksdb.enable-metrics"
-	reportMetricsIntervalSecsOptName = "rocksdb.report-metrics-interval-secs"
+	enableMetricsOptName             = "enable-metrics"
+	reportMetricsIntervalSecsOptName = "report-metrics-interval-secs"
 	defaultReportMetricsIntervalSecs = 15
 
-	maxOpenFilesDBOptName           = "rocksdb.max-open-files"
-	maxFileOpeningThreadsDBOptName  = "rocksdb.max-file-opening-threads"
-	tableCacheNumshardbitsDBOptName = "rocksdb.table_cache_numshardbits"
-	allowMMAPWritesDBOptName        = "rocksdb.allow_mmap_writes"
-	allowMMAPReadsDBOptName         = "rocksdb.allow_mmap_reads"
-	useFsyncDBOptName               = "rocksdb.use_fsync"
-	useAdaptiveMutexDBOptName       = "rocksdb.use_adaptive_mutex"
-	bytesPerSyncDBOptName           = "rocksdb.bytes_per_sync"
-	maxBackgroundJobsDBOptName      = "rocksdb.max-background-jobs"
+	maxOpenFilesDBOptName           = "max-open-files"
+	maxFileOpeningThreadsDBOptName  = "max-file-opening-threads"
+	tableCacheNumshardbitsDBOptName = "table_cache_numshardbits"
+	allowMMAPWritesDBOptName        = "allow_mmap_writes"
+	allowMMAPReadsDBOptName         = "allow_mmap_reads"
+	useFsyncDBOptName               = "use_fsync"
+	useAdaptiveMutexDBOptName       = "use_adaptive_mutex"
+	bytesPerSyncDBOptName           = "bytes_per_sync"
+	maxBackgroundJobsDBOptName      = "max-background-jobs"
 
-	writeBufferSizeCFOptName                = "rocksdb.write-buffer-size"
-	numLevelsCFOptName                      = "rocksdb.num-levels"
-	maxWriteBufferNumberCFOptName           = "rocksdb.max_write_buffer_number"
-	minWriteBufferNumberToMergeCFOptName    = "rocksdb.min_write_buffer_number_to_merge"
-	maxBytesForLevelBaseCFOptName           = "rocksdb.max_bytes_for_level_base"
-	maxBytesForLevelMultiplierCFOptName     = "rocksdb.max_bytes_for_level_multiplier"
-	targetFileSizeBaseCFOptName             = "rocksdb.target_file_size_base"
-	targetFileSizeMultiplierCFOptName       = "rocksdb.target_file_size_multiplier"
-	level0FileNumCompactionTriggerCFOptName = "rocksdb.level0_file_num_compaction_trigger"
-	level0SlowdownWritesTriggerCFOptName    = "rocksdb.level0_slowdown_writes_trigger"
+	writeBufferSizeCFOptName                = "write-buffer-size"
+	numLevelsCFOptName                      = "num-levels"
+	maxWriteBufferNumberCFOptName           = "max_write_buffer_number"
+	minWriteBufferNumberToMergeCFOptName    = "min_write_buffer_number_to_merge"
+	maxBytesForLevelBaseCFOptName           = "max_bytes_for_level_base"
+	maxBytesForLevelMultiplierCFOptName     = "max_bytes_for_level_multiplier"
+	targetFileSizeBaseCFOptName             = "target_file_size_base"
+	targetFileSizeMultiplierCFOptName       = "target_file_size_multiplier"
+	level0FileNumCompactionTriggerCFOptName = "level0_file_num_compaction_trigger"
+	level0SlowdownWritesTriggerCFOptName    = "level0_slowdown_writes_trigger"
 
-	blockCacheSizeBBTOOptName                   = "rocksdb.block_cache_size"
-	bitsPerKeyBBTOOptName                       = "rocksdb.bits_per_key"
-	blockSizeBBTOOptName                        = "rocksdb.block_size"
-	cacheIndexAndFilterBlocksBBTOOptName        = "rocksdb.cache_index_and_filter_blocks"
-	pinL0FilterAndIndexBlocksInCacheBBTOOptName = "rocksdb.pin_l0_filter_and_index_blocks_in_cache"
-	formatVersionBBTOOptName                    = "rocksdb.format_version"
+	blockCacheSizeBBTOOptName                   = "block_cache_size"
+	bitsPerKeyBBTOOptName                       = "bits_per_key"
+	blockSizeBBTOOptName                        = "block_size"
+	cacheIndexAndFilterBlocksBBTOOptName        = "cache_index_and_filter_blocks"
+	pinL0FilterAndIndexBlocksInCacheBBTOOptName = "pin_l0_filter_and_index_blocks_in_cache"
+	formatVersionBBTOOptName                    = "format_version"
 
-	asyncIOReadOptName = "rocksdb.read-async-io"
+	asyncIOReadOptName = "read-async-io"
 )
 
 // AppOptions is the same interface as provided by cosmos-sdk, see for details:
@@ -84,9 +84,40 @@ type AppOptions interface {
 	Get(string) interface{}
 }
 
+// rocksDBOptions implements AppOptions interface.
+// It does it by wrapping another AppOptions, but also takes into account dbName.
+type rocksDBOptions struct {
+	appOpts AppOptions
+	dbName  string
+}
+
+func newRocksDBOptions(appOpts AppOptions, dbName string) *rocksDBOptions {
+	return &rocksDBOptions{
+		appOpts: appOpts,
+		dbName:  dbName,
+	}
+}
+
+// Get constructs database-specific and fallback keys and use them to get value from underlying AppOptions.
+// Database-specific key takes precedence over fallback key.
+func (opts *rocksDBOptions) Get(key string) interface{} {
+	// get value using database-specific key
+	dbSpecificKey := fmt.Sprintf("rocksdb.%v.%v", opts.dbName, key)
+	if opts.appOpts.Get(dbSpecificKey) != nil {
+		return opts.appOpts.Get(dbSpecificKey)
+	}
+
+	// get value using fallback key
+	fallbackKey := fmt.Sprintf("rocksdb.%v", key)
+	return opts.appOpts.Get(fallbackKey)
+}
+
 func OpenDB(appOpts AppOptions, dataDir string, dbName string, backendType dbm.BackendType) (dbm.DB, error) {
+	// wrap AppOptions with rocksDBOptions to make sure dbName is considered when applying configuration
+	// it allows individual database configuration
+	rocksDBOpts := newRocksDBOptions(appOpts, dbName)
 	if backendType == dbm.RocksDBBackend {
-		return openRocksdb(dataDir, dbName, appOpts)
+		return openRocksdb(dataDir, dbName, rocksDBOpts)
 	}
 
 	return dbm.NewDB(dbName, backendType, dataDir)
