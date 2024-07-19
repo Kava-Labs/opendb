@@ -35,6 +35,31 @@ There are 2 main scenarios:
 - opendb loads stored rocksdb configuration and starts with it
 - opendb overrides options which explicitly specified in appOpts (app.toml)
 
+#### Individual database configuration
+
+`app.toml` example:
+```toml
+[rocksdb]
+enable-metrics = true
+report-metrics-interval-secs = 15
+max-open-files = 16384
+...
+
+[rocksdb.blockstore]
+max-open-files = -1
+block_size = 4096
+
+[rocksdb.tx_index]
+max-open-files = -1
+block_size = 4096
+```
+
+`[rocksdb]` section contains `default`/`fallback` database configuration, but you can override it with `database-specific` configuration
+
+it's very convenient approach, because rocksdb configuration is pretty extensive, contains around 30 parameters, but usually we override only few of them
+
+so we can define standard configuration in `[rocksdb]` section, and then override only few params in `database-specific` configurations
+
 ### List of databases:
 
 | Name                            | Subsystem          | IAVL V1 size as of 10.5 millions blocks | IAVL V1 number of SST files as of 10.5 millions blocks |
@@ -45,7 +70,7 @@ There are 2 main scenarios:
 | state.db                        | Ethermint          | 282 GB                                  | 5.5k  |
 | tx_index.db                     | Ethermint          | 504 GB                                  | 11.6k |
 | evidence.db                     | Ethermint          | 28 MB                                   | 270   |
-| evm_indexer.db                  | Ethermint          | 2.2 GB                                  | 230   |
+| evmindexer.db                   | Ethermint          | 2.2 GB                                  | 230   |
 
 ### List of reported rocksdb metrics:
 
