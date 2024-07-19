@@ -28,6 +28,28 @@ func (m *mockAppOptions) Get(key string) interface{} {
 	return m.opts[key]
 }
 
+func TestRocksDBOptions(t *testing.T) {
+	mockAppOptions := newMockAppOptions(map[string]interface{}{
+		// fallback configuration
+		"rocksdb.max-open-files": 16_384,
+		"rocksdb.block_size":     16_384,
+
+		// database-specific configuration
+		"rocksdb.tx_index.max-open-files": 4096,
+		"rocksdb.tx_index.block_size":     4096,
+	})
+
+	// there isn't database-specific configuration for application database, so fallback to fallback configuration
+	appDBOpts := newRocksDBOptions(mockAppOptions, "application")
+	require.Equal(t, 16_384, appDBOpts.Get("max-open-files"))
+	require.Equal(t, 16_384, appDBOpts.Get("block_size"))
+
+	// there is database-specific configuration for tx_index database, so use it instead of fallback configuration
+	txIndexDBOpts := newRocksDBOptions(mockAppOptions, "tx_index")
+	require.Equal(t, 4096, txIndexDBOpts.Get("max-open-files"))
+	require.Equal(t, 4096, txIndexDBOpts.Get("block_size"))
+}
+
 func TestOpenRocksdb(t *testing.T) {
 	t.Run("db already exists", func(t *testing.T) {
 		defaultOpts := newDefaultOptions()
