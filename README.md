@@ -163,5 +163,6 @@ pin_l0_filter_and_index_blocks_in_cache = false
 format_version = 5
 
 # https://rocksdb.org/blog/2022/10/07/asynchronous-io-in-rocksdb.html
+# help speed up iterations
 read_async_io = true
 ```
