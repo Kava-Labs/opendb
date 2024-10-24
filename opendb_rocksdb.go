@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/linxGnu/grocksdb"
 	"github.com/spf13/cast"
 )
