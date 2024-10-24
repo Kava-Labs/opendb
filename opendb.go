@@ -4,7 +4,7 @@
 package opendb
 
 import (
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 // AppOptions is the same interface as provided by cosmos-sdk, see for details:
